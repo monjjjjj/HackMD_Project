@@ -33,6 +33,19 @@ class DataProcessor:
     
     def _process_single_paper(self, paper: Dict) -> Dict:
         try:
+            # Extract version information
+            versions = paper.get('versions', [])
+            version_count = len(versions) if versions else 1
+            
+            # Get first and last version dates
+            first_version_date = None
+            last_version_date = None
+            if versions:
+                if len(versions) > 0 and 'created' in versions[0]:
+                    first_version_date = versions[0].get('created')
+                if len(versions) > 0 and 'created' in versions[-1]:
+                    last_version_date = versions[-1].get('created')
+            
             return {
                 'arxiv_id': paper['arxiv_id'],
                 'title': paper['title'][:500],  
@@ -45,16 +58,57 @@ class DataProcessor:
                 'updated_date': self._parse_date(paper['updated']),
                 'year': self._parse_date(paper['published']).year,
                 'month': self._parse_date(paper['published']).month,
+                'version_count': version_count,
+                'versions': versions,
+                'first_version_date': first_version_date,
+                'last_version_date': last_version_date,
+                'journal_ref': paper.get('journal-ref') or paper.get('journal_ref'),
+                'doi': paper.get('doi'),
+                'comments': paper.get('comments'),
+                'institutions': self._extract_institutions(paper),
+                'author_affiliations': str(paper.get('authors_parsed', [])) if paper.get('authors_parsed') else "",
+                'publication_date': None,  # To be enriched from Crossref API
+                'publication_type': 'preprint',  # preprint/journal/conference
+                'citation_count': 0,  # To be enriched from Semantic Scholar API
+                'keywords': [],  # To be extracted using NLP
             }
         except Exception as e:
             print(f"Error processing paper {paper.get('arxiv_id')}: {e}")
             return None
     
     def _parse_date(self, date_str: str) -> datetime:
+        if not date_str:
+            return datetime.now()
+        
         try:
+            # Try ISO format first
             return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
         except:
-            return datetime.now()
+            try:
+                # Try arXiv format: "Mon, 2 Apr 2007 19:18:42 GMT"
+                return datetime.strptime(date_str, '%a, %d %b %Y %H:%M:%S %Z')
+            except:
+                # Last resort - check if it's just a year
+                try:
+                    if date_str.isdigit() and len(date_str) == 4:
+                        return datetime(int(date_str), 1, 1)
+                except:
+                    pass
+                return datetime.now()
+    
+    def _extract_institutions(self, paper: Dict) -> List[str]:
+        """Extract institutions from authors_parsed field only"""
+        institutions = []
+        
+        # Only check authors_parsed field (format: [['LastName', 'FirstName', 'Affiliation']])
+        authors_parsed = paper.get('authors_parsed', [])
+        for author in authors_parsed:
+            if len(author) > 2 and author[2]:
+                affiliation = author[2].strip()
+                if affiliation and affiliation not in institutions:
+                    institutions.append(affiliation)
+        
+        return institutions
     
     def _add_metrics(self, df: pd.DataFrame) -> pd.DataFrame:
         df['title_length'] = df['title'].str.len()
