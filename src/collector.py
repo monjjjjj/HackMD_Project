@@ -11,7 +11,6 @@ class ArxivCollector:
         self.dataset_collector = DatasetCollector()
         
     def collect_papers(self, category: str = None, days_back: int = None, year: Optional[int] = None, limit: int = 1000) -> List[Dict]:
-        # Always use Kaggle dataset
         papers = self.dataset_collector.collect_from_dataset(
             category=category,
             year=year,
