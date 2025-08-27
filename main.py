@@ -53,10 +53,6 @@ def run_pipeline(category: str = None, year: int = None, limit: int = 1000):
         quality_report = monitor.check_data_quality(df)
         print(f"Quality score: {quality_report['quality_score']:.2%}")
         
-        anomalies = monitor.detect_anomalies(df)
-        if anomalies:
-            print(f"Found {len(anomalies)} anomaly types")
-        
         print("\nStep 4: Storing data...")
         storage = StorageManager()
         
@@ -65,14 +61,21 @@ def run_pipeline(category: str = None, year: int = None, limit: int = 1000):
         storage.index_papers(df)
         
         stats = storage.get_statistics()
-        if stats:
+        if stats and stats.get('total_papers', 0) > 0:
             print(f"\nDatabase statistics:")
             print(f"  Total papers: {stats.get('total_papers', 0)}")
-            avg_authors = stats.get('avg_authors', 0)
-            if avg_authors is not None:
-                print(f"  Average authors: {avg_authors:.1f}")
-            else:
-                print(f"  Average authors: 0")
+            
+            # Show top categories
+            if stats.get('top_categories'):
+                print(f"  Top categories:")
+                for cat in stats['top_categories'][:3]:
+                    print(f"    - {cat['key']}: {cat['doc_count']} papers")
+            
+            # Show recent years
+            if stats.get('recent_years'):
+                print(f"  Papers by year:")
+                for year in stats['recent_years'][:3]:
+                    print(f"    - {year['key']}: {year['doc_count']} papers")
         
         monitor.end_monitoring(session, len(df))
         
