@@ -2,6 +2,7 @@ import json
 import pandas as pd
 from typing import Dict, List
 from opensearchpy import OpenSearch
+import boto3
 import config
 
 class StorageManager:
@@ -43,9 +44,24 @@ class StorageManager:
         print(f"Created index: {config.OPENSEARCH_INDEX}")
     
     def upload_to_s3(self, local_file: str, s3_key: str):
-        """Placeholder for S3 upload"""
-        print(f"S3 upload skipped: {local_file} -> {s3_key}")
-        return True
+        """Upload file to S3"""
+        try:
+            # Try to create S3 client
+            s3_client = boto3.client(
+                's3', 
+                region_name=config.AWS_REGION
+            )
+            
+            # Upload the file
+            s3_client.upload_file(local_file, config.S3_BUCKET, s3_key)
+            print(f"✓ Uploaded to s3://{config.S3_BUCKET}/{s3_key}")
+            return True
+            
+        except Exception as e:
+            # If S3 is not configured or fails, continue without error
+            print(f"S3 upload skipped: {e}")
+            print(f"  (File saved locally: {local_file})")
+            return False
     
     def index_papers(self, df: pd.DataFrame):
         """Index papers to OpenSearch"""
