@@ -24,7 +24,6 @@ HackMD/
 │   ├── kaggle_arxiv/     # ArXiv 資料集
 │   ├── processed_*.csv   # 處理後的資料
 │   └── metrics.json      # 執行統計
-└── tests/                # 測試檔案
 ```
 
 ## 系統架構
