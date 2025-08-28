@@ -70,7 +70,7 @@ class DataProcessor:
                 'publication_date': None,  # To be enriched from Crossref API
                 'publication_type': 'preprint',  # preprint/journal/conference
                 'citation_count': 0,  # To be enriched from Semantic Scholar API
-                'keywords': [],  # To be extracted using NLP
+                'keywords': self._extract_keywords(paper['title'], paper['abstract'])  # Extract keywords from title and abstract
             }
         except Exception as e:
             print(f"Error processing paper {paper.get('arxiv_id')}: {e}")
@@ -109,6 +109,39 @@ class DataProcessor:
                     institutions.append(affiliation)
         
         return institutions
+    
+    def _extract_keywords(self, title: str, abstract: str, max_keywords: int = 5) -> List[str]:
+        """Extract top keywords from title and abstract"""
+        try:
+            # Combine title (weighted more) and abstract
+            text = f"{title} {title} {abstract}"
+            
+            # Basic preprocessing
+            text = text.lower()
+            text = re.sub(r'[^\w\s]', ' ', text)
+            
+            # Basic stopwords
+            stopwords = {
+                'the', 'a', 'an', 'and', 'or', 'in', 'on', 'to', 'for', 'of', 'with',
+                'is', 'are', 'was', 'were', 'be', 'we', 'our', 'this', 'that', 'these'
+            }
+            
+            # Count word frequency
+            words = text.split()
+            word_freq = {}
+            
+            for word in words:
+                if len(word) >= 2 and word not in stopwords:  # Include short words like AI, ML, NLP
+                    word_freq[word] = word_freq.get(word, 0) + 1
+            
+            # Get top keywords by frequency
+            sorted_words = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)
+            keywords = [word for word, freq in sorted_words[:max_keywords]]
+            
+            return keywords
+            
+        except Exception:
+            return []
     
     def _add_metrics(self, df: pd.DataFrame) -> pd.DataFrame:
         df['title_length'] = df['title'].str.len()

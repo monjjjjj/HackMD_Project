@@ -3,18 +3,19 @@ import json
 from typing import List, Dict, Optional
 
 import config
-from src.dataset_collector import DatasetCollector
+from src.dataset_collector import DatasetCollector  # Using simplified version
 
 class ArxivCollector:
     def __init__(self, use_dataset: bool = True):
         self.use_dataset = True  # Always use dataset
         self.dataset_collector = DatasetCollector()
         
-    def collect_papers(self, category: str = None, days_back: int = None, year: Optional[int] = None, limit: int = 1000) -> List[Dict]:
+    def collect_papers(self, category: str = None, days_back: int = None, year: Optional[int] = None, limit: int = 1000, keyword: str = None) -> List[Dict]:
         papers = self.dataset_collector.collect_from_dataset(
             category=category,
             year=year,
-            limit=limit
+            limit=limit,
+            keyword=keyword
         )
         return papers
     

@@ -33,7 +33,8 @@ class StorageManager:
                     "abstract": {"type": "text"},
                     "authors": {"type": "keyword"},
                     "primary_category": {"type": "keyword"},
-                    "year": {"type": "integer"}
+                    "year": {"type": "integer"},
+                    "keywords": {"type": "keyword"}
                 }
             }
         }

@@ -9,7 +9,7 @@ from src.processor import DataProcessor
 from src.storage import StorageManager
 from src.monitor import PipelineMonitor
 
-def run_pipeline(category: str = None, year: int = None, limit: int = 1000):
+def run_pipeline(category: str = None, year: int = None, limit: int = 1000, keyword: str = None):
     print(f"\n{'='*60}")
     print(f"ArXiv Data Pipeline - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"{'='*60}\n")
@@ -36,7 +36,7 @@ def run_pipeline(category: str = None, year: int = None, limit: int = 1000):
                     for cat, count in list(stats['categories'].items())[:5]:
                         print(f"  {cat}: {count} papers")
         
-        papers = collector.collect_papers(category, days_back=None, year=year, limit=limit)
+        papers = collector.collect_papers(category, days_back=None, year=year, limit=limit, keyword=keyword)
         
         if not papers:
             print("No papers found!")
@@ -47,6 +47,10 @@ def run_pipeline(category: str = None, year: int = None, limit: int = 1000):
         print("\nStep 2: Processing data...")
         processor = DataProcessor()
         df = processor.process_papers(raw_file)
+        # Note: keyword filtering already done during collection
+        if keyword:
+            print(f"(Papers already filtered for keyword '{keyword}' during collection)")
+        
         csv_file, json_file = processor.save_processed_data(df, category)
         
         print("\nStep 3: Data quality check...")
@@ -109,6 +113,7 @@ def main():
     parser.add_argument('--category', help='arXiv category to filter (e.g., cs, math, physics)')
     parser.add_argument('--year', type=int, help='Filter papers by year')
     parser.add_argument('--limit', type=int, default=1000, help='Maximum number of papers to process')
+    parser.add_argument('--keyword', help='Filter papers by keyword in title/abstract')
     parser.add_argument('--search', help='Search for papers in indexed data')
     parser.add_argument('--stats', action='store_true', help='Show dataset statistics')
     
@@ -139,7 +144,8 @@ def main():
         run_pipeline(
             category=args.category,
             year=args.year,
-            limit=args.limit
+            limit=args.limit,
+            keyword=args.keyword
         )
 
 if __name__ == "__main__":
