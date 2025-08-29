@@ -6,6 +6,7 @@ from datetime import datetime
 
 from src.collector import ArxivCollector
 from src.processor import DataProcessor
+from src.processor_parallel import DataProcessor as ParallelDataProcessor
 from src.storage import StorageManager
 from src.monitor import PipelineMonitor
 
@@ -45,7 +46,14 @@ def run_pipeline(category: str = None, year: int = None, limit: int = 1000, keyw
         raw_file = collector.save_raw_data(papers, category)
         
         print("\nStep 2: Processing data...")
-        processor = DataProcessor()
+        # Choose processor based on data size
+        if len(papers) > 1000:
+            print(f"Using parallel processor for {len(papers)} papers (>1000)")
+            processor = ParallelDataProcessor()
+        else:
+            print(f"Using standard processor for {len(papers)} papers (≤1000)")
+            processor = DataProcessor()
+        
         df = processor.process_papers(raw_file)
         # Note: keyword filtering already done during collection
         if keyword:

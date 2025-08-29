@@ -19,8 +19,9 @@ HackMD/
 ├── src/
 │   ├── collector.py          # 資料收集
 │   ├── dataset_collector.py  # 資料集處理
-│   ├── processor.py          # 資料處理
-│   ├── storage.py            # 資料儲存 (含 S3 功能)
+│   ├── processor.py          # 標準資料處理（≤1000筆）
+│   ├── processor_parallel.py # 並行資料處理（>1000筆）
+│   ├── storage.py            # 資料儲存 (含 S3 功能、批次索引)
 │   └── monitor.py            # 監控統計
 └── data/
     ├── kaggle_arxiv/         # ArXiv 資料集
@@ -47,11 +48,12 @@ Kaggle Dataset → Collector → Processor → Storage → OpenSearch
   - 支援多種篩選條件（類別、年份、關鍵字）
   - 使用進度條顯示處理狀態
 
-- **Processor** (`src/processor.py`)  
+- **Processor** (`src/processor.py`, `src/processor_parallel.py`)  
   - 資料清理與轉換
   - 提取機構資訊
   - 自動產生關鍵字（基於詞頻）
   - 計算衍生指標
+  - 智慧處理器選擇：≤1000筆用標準版，>1000筆用並行版
 
 - **Storage** (`src/storage.py`)
   - OpenSearch 索引管理
@@ -160,6 +162,8 @@ Collecting papers: 50 papers [00:03, 15.23 papers/s, collected=50]
 # 進度條顯示：已收集數量、速度
 
 Step 2: Processing data...
+Using standard processor for 50 papers (≤1000)
+# 自動選擇處理器：標準版（≤1000）或並行版（>1000）
 Processing 50 papers
 Data quality score: 96.69%
 # 資料品質分數：非空欄位的比例
@@ -168,8 +172,10 @@ Step 3: Data quality check...
 Quality score: 96.69%
 
 Step 4: Storing data...
-Indexed 50/50 papers by OpenSearch
-# OpenSearch 索引成功率
+✓ Uploaded to s3://chloe-arxiv-data/processed/batch_20240829_143022.csv
+# S3 上傳狀態（如有設定 AWS）
+Indexed 50/50 papers by OpenSearch (bulk mode)
+# OpenSearch 批次索引成功率
 
 Database statistics:
   Total papers: 150
@@ -194,6 +200,12 @@ Last run:
 ### 特殊情況的輸出訊息
 
 ```bash
+# 處理大資料集時（>1000筆）
+Step 2: Processing data...
+Using parallel processor for 2000 papers (>1000)
+Processing 2000 papers with parallel processing
+# 自動啟用並行處理，使用多核心加速
+
 # 當關鍵字搜尋結果不足時
 ⚠️  Found only 23 papers containing 'blockchain' (requested: 50)
     Scanned 200,000 papers total
@@ -202,11 +214,18 @@ Last run:
 ❌ No papers found containing 'xyz123' after scanning 200,000 papers
     Try: 1) Different keyword  2) Remove category filter  3) Check spelling
 
+# S3 上傳失敗時（沒有 AWS 設定）
+S3 upload skipped: Unable to locate credentials
+  (File saved locally: data/processed_cs.CV_20240829_143022.csv)
+
 # 當 OpenSearch 未啟動時
 OpenSearch not available
 (系統仍會產生 CSV/JSON 檔案，但不會建立索引)
 
-# 查看資料集統計時
+# 查看資料集統計時（使用進度條）
+Calculating dataset statistics...
+Scanning: 100%|████████| 2800000/2800000 [00:45<00:00, 62222.22 papers/s]
+
 Dataset Statistics:
 Total papers: 2,800,000
 File size: 4621.3 MB
@@ -280,6 +299,27 @@ curl -X GET "localhost:9200/arxiv_papers/_search?q=transformer"
 - `publication_date`: 期刊正式發表日期（需外部 API）
 - `publication_type`: 發表類型（預設 "preprint"）
 - `citation_count`: 引用次數（需外部 API）
+
+## 效能優化
+
+### 處理器選擇
+系統會根據資料量自動選擇最適合的處理器：
+- **≤1000 筆論文**：使用標準處理器
+- **>1000 筆論文**：使用並行處理器
+
+### 批次索引
+- OpenSearch 使用 bulk API 批次索引
+
+### 執行範例
+```bash
+# 小資料集（自動用標準處理器）
+python main.py --limit 500
+# 輸出：Using standard processor for 500 papers (≤1000)
+
+# 大資料集（自動用並行處理器）
+python main.py --limit 5000
+# 輸出：Using parallel processor for 5000 papers (>1000)
+```
 
 ## 設計理念
 

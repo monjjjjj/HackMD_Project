@@ -64,29 +64,40 @@ class StorageManager:
             return False
     
     def index_papers(self, df: pd.DataFrame):
-        """Index papers to OpenSearch"""
+        """Bulk index papers to OpenSearch for better performance"""
         if not self.opensearch:
             print("OpenSearch not available")
             return
         
-        success = 0
-        for _, row in df.iterrows():
-            try:
-                doc = row.to_dict()
-                # Convert lists to proper format
-                if 'authors' in doc and isinstance(doc['authors'], str):
-                    doc['authors'] = [doc['authors']]
-                    
-                self.opensearch.index(
-                    index=config.OPENSEARCH_INDEX,
-                    id=doc['arxiv_id'],
-                    body=doc
-                )
-                success += 1
-            except Exception as e:
-                print(f"Error indexing {row['arxiv_id']}: {e}")
+        from opensearchpy import helpers
         
-        print(f"Indexed {success}/{len(df)} papers by OpenSearch")
+        # Prepare bulk actions
+        actions = []
+        for _, row in df.iterrows():
+            doc = row.to_dict()
+            # Convert lists to proper format
+            if 'authors' in doc and isinstance(doc['authors'], str):
+                doc['authors'] = [doc['authors']]
+            
+            actions.append({
+                "_index": config.OPENSEARCH_INDEX,
+                "_id": doc['arxiv_id'],
+                "_source": doc
+            })
+        
+        # Bulk index
+        try:
+            success, failed = helpers.bulk(
+                self.opensearch, 
+                actions,
+                chunk_size=100,  # Process 100 documents at a time
+                request_timeout=30
+            )
+            print(f"Indexed {success}/{len(df)} papers by OpenSearch (bulk mode)")
+            if failed:
+                print(f"Failed to index {len(failed)} papers")
+        except Exception as e:
+            print(f"Bulk indexing error: {e}")
     
     def search_papers(self, query: str, size: int = 10) -> List[Dict]:
         """Search papers in OpenSearch"""
