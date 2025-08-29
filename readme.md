@@ -407,12 +407,6 @@ curl -X GET "localhost:9200/arxiv_papers/_search" -H 'Content-Type: application/
 - 作者合作網路（有作者姓名歧義問題）
 - 機構統計（機構名稱不統一）
 
-### ❌ 目前做不到
-- 論文影響力評估（缺引用資料）
-- 學術排名（缺質量指標）
-- 個人化推薦（缺使用者行為資料）
-- 發表延遲分析（缺期刊發表日期）
-
 ### 未來開發需求支援度
 
 #### 1. Management Dashboard 支援度
