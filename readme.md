@@ -10,20 +10,25 @@
 
 ```
 HackMD/
-├── main.py                 # 主程式入口
-├── config.py              # 設定檔
-├── requirements.txt       # 套件相依
-├── docker-compose.yml     # OpenSearch 設定
+├── main.py                    # 主程式入口
+├── config.py                  # 設定檔
+├── requirements.txt           # 套件相依
+├── docker-compose.yml         # OpenSearch 設定
+├── readme.md                  # 專案說明文檔
+├── TaskDescription.txt        # 需求文件
 ├── src/
-│   ├── collector.py       # 資料收集
+│   ├── collector.py          # 資料收集
 │   ├── dataset_collector.py  # 資料集處理
-│   ├── processor.py       # 資料處理
-│   ├── storage.py         # 資料儲存
-│   └── monitor.py         # 監控統計
-├── data/
-│   ├── kaggle_arxiv/     # ArXiv 資料集
-│   ├── processed_*.csv   # 處理後的資料
-│   └── metrics.json      # 執行統計
+│   ├── processor.py          # 資料處理
+│   ├── storage.py            # 資料儲存 (含 S3 功能)
+│   └── monitor.py            # 監控統計
+└── data/
+    ├── kaggle_arxiv/         # ArXiv 資料集
+    │   └── arxiv-metadata-oai-snapshot.json
+    ├── dataset_*.json        # 原始收集的資料
+    ├── processed_*.csv       # 處理後的 CSV 檔案
+    ├── processed_*.json      # 處理後的 JSON 檔案
+    └── metrics.json          # 執行統計
 ```
 
 ## 系統架構
