@@ -502,7 +502,7 @@ curl -X GET "localhost:9200/arxiv_papers/_search" -H 'Content-Type: application/
   - S3 儲存使用量
   - 記憶體使用率
   - CPU 使用率
-  - 磁碟 I/O
+  - Disk I/O 狀況
 
 **視覺化**:
   - 系統健康度評分 (0-100)
